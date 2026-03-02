@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orçamento Familiar 2026 - Fluxo Real</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .card { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); padding: 20px; }
+        body { background-color: #f1f5f9; font-family: 'Inter', sans-serif; }
+        .week-box { border-left: 4px solid #4f46e5; }
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .input-editable { width: 95px; text-align: right; border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px; font-weight: bold; color: #1e293b; outline: none; }
+        .input-savings { background: #1e293b; color: #10b981; border: 1px solid #334155; width: 100%; padding: 5px; border-radius: 6px; text-align: center; font-weight: bold; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-6xl mx-auto">
+        <header class="mb-8 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div>
+                <h1 class="text-3xl font-extrabold text-slate-800 tracking-tight">Orçamento Familiar 2026</h1>
+                <p class="text-slate-500 font-medium italic">Gestão de Fluxo Acumulado Pós-Reserva</p>
+            </div>
+            <select id="monthSelect" class="bg-indigo-600 text-white border-none rounded-xl p-3 shadow-lg font-bold outline-none cursor-pointer" onchange="updateDashboard()">
+                <option value="2">Março 2026</option>
+                <option value="3">Abril 2026</option>
+                <option value="4">Maio 2026</option>
+                <option value="5">Junho 2026</option>
+                <option value="6">Julho 2026</option>
+                <option value="7">Agosto 2026</option>
+                <option value="8">Setembro 2026</option>
+                <option value="9">Outubro 2026</option>
+                <option value="10">Novembro 2026</option>
+                <option value="11">Dezembro 2026</option>
+            </select>
+        </header>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div class="card border-l-4 border-slate-400">
+                <p class="text-[10px] text-slate-400 font-black uppercase tracking-widest">Saldo Inicial (vencido)</p>
+                <h2 id="prevBalance" class="text-xl font-bold text-slate-600">$ 0.00</h2>
+            </div>
+            <div class="card border-l-4 border-emerald-500">
+                <p class="text-[10px] text-slate-400 font-black uppercase tracking-widest">Receita do Mês</p>
+                <h2 id="totalIncome" class="text-xl font-bold text-emerald-600">$ 0.00</h2>
+            </div>
+            <div class="card border-l-4 border-rose-500">
+                <p class="text-[10px] text-slate-400 font-black uppercase tracking-widest">Despesas do Mês</p>
+                <h2 id="totalExpenses" class="text-xl font-bold text-rose-600">$ 0.00</h2>
+            </div>
+            <div class="card border-l-4 border-indigo-500">
+                <p class="text-[10px] text-slate-400 font-black uppercase tracking-widest">Livre para o Próximo Mês</p>
+                <h2 id="balance" class="text-xl font-bold text-indigo-600">$ 0.00</h2>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div class="lg:col-span-4 space-y-6">
+                <div class="card border border-emerald-100">
+                    <h3 class="font-bold text-slate-700 mb-4 border-b pb-2 text-xs uppercase">💵 Renda de <span id="labelMes">Mês</span></h3>
+                    <div class="space-y-4">
+                        <div id="initialBalanceContainer" class="hidden">
+                            <label class="block text-[10px] font-bold text-indigo-500 uppercase">Ajuste de Saldo (Banca Inicial)</label>
+                            <input type="number" id="inputExtra" value="0" class="w-full p-2 border border-indigo-200 rounded-lg outline-none bg-indigo-50" oninput="saveAndRefresh()">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase">Israel Semanal</label>
+                            <input type="number" id="inputSalIsrael" value="980.50" class="w-full p-2 border rounded-lg outline-none" oninput="saveAndRefresh()">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase">Raquel Quinzenal</label>
+                            <input type="number" id="inputSalRaquel" value="2200.00" class="w-full p-2 border rounded-lg outline-none" oninput="saveAndRefresh()">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-indigo-600 uppercase italic">Comissão Israel (Exclusiva do Mês)</label>
+                            <input type="number" id="inputComissao" value="0" class="w-full p-2 border-2 border-indigo-400 rounded-lg outline-none" oninput="saveAndRefresh()">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card bg-slate-900 text-white">
+                    <h3 class="font-bold mb-4 border-b border-slate-700 pb-2 text-xs uppercase">🛡️ Poupança Confirmada</h3>
+                    <div class="space-y-4">
+                        <div class="p-3 bg-slate-800 rounded">
+                            <div class="flex justify-between items-end mb-2">
+                                <p class="text-[10px] font-bold uppercase opacity-60">Israel (Sugestão: <span id="goalIsr">0</span>)</p>
+                            </div>
+                            <input type="number" id="realIsrSave" placeholder="Valor Poupado" class="input-savings" oninput="saveAndRefresh()">
+                        </div>
+                        <div class="p-3 bg-slate-800 rounded">
+                            <div class="flex justify-between items-end mb-2">
+                                <p class="text-[10px] font-bold uppercase opacity-60">Raquel (Sugestão: <span id="goalRaq">0</span>)</p>
+                            </div>
+                            <input type="number" id="realRaqSave" placeholder="Valor Poupado" class="input-savings" oninput="saveAndRefresh()">
+                        </div>
+                        <p class="text-[9px] text-center italic text-slate-400">O saldo final para o próximo mês é deduzido destes valores.</p>
+                    </div>
+                </div>
+
+                <div class="card border border-rose-100">
+                    <h3 class="font-bold text-slate-700 mb-4 border-b pb-2 text-rose-600 uppercase text-xs">Cartões (Mensal)</h3>
+                    <div class="space-y-2">
+                        <input type="number" id="cardQuicksilver" placeholder="Quicksilver (12)" class="w-full p-2 border rounded text-sm" oninput="saveAndRefresh()">
+                        <input type="number" id="cardCostco" placeholder="Citi Costco (14)" class="w-full p-2 border rounded text-sm" oninput="saveAndRefresh()">
+                        <input type="number" id="cardRaquel" placeholder="Cartão Raquel (14)" class="w-full p-2 border rounded text-sm" oninput="saveAndRefresh()">
+                        <input type="number" id="cardSavor" placeholder="Savor (27)" class="w-full p-2 border rounded text-sm" oninput="saveAndRefresh()">
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-8 space-y-6">
+                <div class="card">
+                    <h3 class="font-bold text-lg mb-4 text-slate-800 border-b pb-2">Fluxo Semanal</h3>
+                    <div id="weeklyInsights" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                </div>
+                <div class="card overflow-hidden">
+                    <h3 class="font-bold text-slate-800 mb-4 text-sm">Detalhamento de Custos</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-slate-50 text-slate-500 uppercase text-[10px]">
+                                <tr><th class="p-3 text-left">Dia</th><th class="p-3 text-left">Descrição</th><th class="p-3 text-right">Valor ($)</th></tr>
+                            </thead>
+                            <tbody id="expenseTable" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const DESCONTO_RAQUEL = 909.50;
+        const despesasBase = [
+            {venc: 1, conta: "Tesla Payment", val: 697.00},
+            {venc: 1, conta: "Spectrum", val: 70.00},
+            {venc: 2, conta: "Electricity (Luz)", val: 305.48},
+            {venc: 5, conta: "Davi Soccer", val: 205.00},
+            {venc: 12, conta: "Subscriptions", val: 123.29},
+            {venc: 12, conta: "Gym", val: 45.00},
+            {venc: 12, conta: "Dog Food", val: 233.19},
+            {venc: 14, conta: "Explorer", val: 541.00},
+            {venc: 16, conta: "Water (Agua)", val: 90.00},
+            {venc: 22, conta: "AT&T", val: 300.00},
+            {venc: 27, conta: "Apple", val: 36.00},
+            {venc: 28, conta: "Car Insurance", val: 368.54},
+            {venc: 28, conta: "PET", val: 80.00},
+            {venc: 31, conta: "Rent (Aluguel)", val: 3130.00}
+        ];
+
+        function getTuesdays(m) {
+            let t = []; let d = new Date(2026, m, 1);
+            while (d.getMonth() === m) { if (d.getDay() === 2) t.push(d.getDate()); d.setDate(d.getDate()+1); }
+            return t;
+        }
+
+        function getSaved(m) {
+            const s = localStorage.getItem('orc_fam_v_final_2026_fixed_' + m);
+            return s ? JSON.parse(s) : null;
+        }
+
+        function saveAndRefresh() {
+            const m = document.getElementById('monthSelect').value;
+            const edits = {};
+            despesasBase.forEach((d, i) => {
+                const el = document.getElementById(`edit-${i}`);
+                if(el) edits[d.conta] = parseFloat(el.value) || 0;
+            });
+
+            const data = {
+                isr: parseFloat(document.getElementById('inputSalIsrael').value) || 0,
+                raq: parseFloat(document.getElementById('inputSalRaquel').value) || 0,
+                com: parseFloat(document.getElementById('inputComissao').value) || 0,
+                ext: parseFloat(document.getElementById('inputExtra').value) || 0,
+                realIsr: parseFloat(document.getElementById('realIsrSave').value) || 0,
+                realRaq: parseFloat(document.getElementById('realRaqSave').value) || 0,
+                qks: parseFloat(document.getElementById('cardQuicksilver').value) || 0,
+                cst: parseFloat(document.getElementById('cardCostco').value) || 0,
+                rcard: parseFloat(document.getElementById('cardRaquel').value) || 0,
+                svr: parseFloat(document.getElementById('cardSavor').value) || 0,
+                editedValues: edits
+            };
+            localStorage.setItem('orc_fam_v_final_2026_fixed_' + m, JSON.stringify(data));
+            updateDashboard();
+        }
+
+        function calcFinalBalanceOfMonth(m) {
+            const t = getTuesdays(m);
+            const s = getSaved(m) || { isr: 980.50, raq: 2200, com: 0, ext: 0, realIsr: 0, realRaq: 0, qks: 0, cst: 0, rcard: 0, svr: 0, editedValues: {} };
+            
+            const raqLiqTotal = (s.raq - DESCONTO_RAQUEL) * 2;
+            const income = (t.length * s.isr) + s.com + (m == 2 ? s.ext : 0) + raqLiqTotal;
+            
+            let expenses = s.qks + s.cst + s.rcard + s.svr;
+            despesasBase.forEach(d => {
+                expenses += (s.editedValues && s.editedValues[d.conta] !== undefined) ? s.editedValues[d.conta] : d.val;
+            });
+
+            const savings = s.realIsr + s.realRaq;
+            return income - expenses - savings;
+        }
+
+        function updateDashboard() {
+            const m = parseInt(document.getElementById('monthSelect').value);
+            const tues = getTuesdays(m);
+            const s = getSaved(m);
+            const label = document.getElementById('monthSelect').options[document.getElementById('monthSelect').selectedIndex].text;
+            document.getElementById('labelMes').innerText = label.split(' ')[0];
+
+            if (s) {
+                document.getElementById('inputSalIsrael').value = s.isr;
+                document.getElementById('inputSalRaquel').value = s.raq;
+                document.getElementById('inputComissao').value = s.com;
+                document.getElementById('inputExtra').value = s.ext;
+                document.getElementById('realIsrSave').value = s.realIsr || "";
+                document.getElementById('realRaqSave').value = s.realRaq || "";
+                document.getElementById('cardQuicksilver').value = s.qks || "";
+                document.getElementById('cardCostco').value = s.cst || "";
+                document.getElementById('cardRaquel').value = s.rcard || "";
+                document.getElementById('cardSavor').value = s.svr || "";
+            } else {
+                // Reset comission if month is new
+                document.getElementById('inputComissao').value = 0;
+            }
+
+            document.getElementById('initialBalanceContainer').className = (m === 2) ? "block" : "hidden";
+
+            let carryover = 0; if(m > 2) for(let i=2; i<m; i++) carryover += calcFinalBalanceOfMonth(i);
+            
+            const isrPay = parseFloat(document.getElementById('inputSalIsrael').value) || 0;
+            const raqPay = parseFloat(document.getElementById('inputSalRaquel').value) || 0;
+            const commVal = parseFloat(document.getElementById('inputComissao').value) || 0;
+            const extVal = (m === 2) ? parseFloat(document.getElementById('inputExtra').value) || 0 : 0;
+
+            const raqLiqTotal = (raqPay - DESCONTO_RAQUEL) * 2;
+            const totalIncome = (tues.length * isrPay) + commVal + extVal + raqLiqTotal + carryover;
+            
+            const currentList = despesasBase.map((d, i) => ({
+                ...d, val: (s && s.editedValues && s.editedValues[d.conta] !== undefined) ? s.editedValues[d.conta] : d.val, idx: i
+            }));
+
+            const cards = [
+                {venc: 12, conta: "Quicksilver Card", val: parseFloat(document.getElementById('cardQuicksilver').value) || 0},
+                {venc: 14, conta: "Citi Costco Card", val: parseFloat(document.getElementById('cardCostco').value) || 0},
+                {venc: 14, conta: "Raquel's Card", val: parseFloat(document.getElementById('cardRaquel').value) || 0},
+                {venc: 27, conta: "Savor Card", val: parseFloat(document.getElementById('cardSavor').value) || 0}
+            ].filter(c => c.val > 0);
+            
+            const fullList = [...currentList, ...cards].sort((a,b) => a.venc - b.venc);
+
+            const insightBox = document.getElementById('weeklyInsights');
+            const tableBody = document.getElementById('expenseTable');
+            insightBox.innerHTML = ''; tableBody.innerHTML = '';
+            
+            let expTotal = 0;
+            tues.forEach((tue, i) => {
+                const nextTue = tues[i+1] || 32;
+                const weekD = fullList.filter(d => (i === 0 ? d.venc < nextTue : d.venc >= tue && d.venc < nextTue));
+                let weekRevenue = isrPay;
+                if (i === 1) weekRevenue += commVal;
+                if (15 >= tue && 15 < nextTue) weekRevenue += (raqPay - DESCONTO_RAQUEL);
+                if (31 >= tue && 31 < nextTue) weekRevenue += (raqPay - DESCONTO_RAQUEL);
+                const weekSum = weekD.reduce((a,b) => a + b.val, 0);
+                const saldoW = (i === 0 ? weekRevenue + carryover + extVal : weekRevenue) - weekSum;
+
+                insightBox.innerHTML += `
+                    <div class="week-box bg-white p-3 border rounded shadow-sm">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-[10px] font-black text-indigo-500 uppercase">Week Tue ${tue}</span>
+                            <span class="text-xs font-bold ${saldoW >= 0 ? 'text-emerald-600' : 'text-rose-500'}">$ ${saldoW.toFixed(2)}</span>
+                        </div>
+                        <div class="space-y-1">${weekD.map(d => `<div class="flex justify-between text-[11px] text-slate-500"><span>${d.conta}</span><span>$ ${d.val.toFixed(2)}</span></div>`).join('')}</div>
+                    </div>`;
+            });
+
+            fullList.forEach(d => {
+                expTotal += d.val;
+                if(d.idx !== undefined) {
+                    tableBody.innerHTML += `<tr><td class="p-3 text-slate-400 font-mono">${d.venc}</td><td class="p-3 font-medium text-slate-700">${d.conta}</td><td class="p-3 text-right"><input type="number" id="edit-${d.idx}" value="${d.val}" class="input-editable" oninput="saveAndRefresh()"></td></tr>`;
+                } else {
+                    tableBody.innerHTML += `<tr class="bg-rose-50 font-bold text-rose-700"><td class="p-3 font-mono">${d.venc}</td><td class="p-3 uppercase text-[10px] italic">${d.conta}</td><td class="p-3 text-right">$ ${d.val.toFixed(2)}</td></tr>`;
+                }
+            });
+
+            const realIsr = parseFloat(document.getElementById('realIsrSave').value) || 0;
+            const realRaq = parseFloat(document.getElementById('realRaqSave').value) || 0;
+            const totalSavings = realIsr + realRaq;
+            const finalBal = totalIncome - expTotal - totalSavings;
+
+            const goalTotal = (totalIncome - carryover) * 0.20;
+            const isrRatio = (tues.length * isrPay + commVal) / (totalIncome - carryover - extVal);
+
+            document.getElementById('prevBalance').innerText = `$ ${carryover.toFixed(2)}`;
+            document.getElementById('totalIncome').innerText = `$ ${(totalIncome - carryover).toFixed(2)}`;
+            document.getElementById('totalExpenses').innerText = `$ ${expTotal.toFixed(2)}`;
+            document.getElementById('balance').innerText = `$ ${finalBal.toFixed(2)}`;
+            document.getElementById('goalIsr').innerText = `$ ${(goalTotal * isrRatio).toFixed(0)}`;
+            document.getElementById('goalRaq').innerText = `$ ${(goalTotal * (1 - isrRatio)).toFixed(0)}`;
+        }
+        window.onload = updateDashboard;
+    </script>
+</body>
+</html>
